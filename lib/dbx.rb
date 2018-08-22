@@ -7,6 +7,7 @@ require 'active_record'
 require 'pp'
 
 require 'dbx/model_base'
+require 'dbx/differ'
 
 # Collection of database utility methods
 #
@@ -39,6 +40,10 @@ module DBX
   # TODO what about windows?!
   def tty
     @tty ||= File.open('/dev/tty', 'a')
+  end
+
+  def info(msg)
+    tty.puts("\e[33m#{msg}\e[0m")
   end
 
   def connection(db_url: config_db, &block)
@@ -90,6 +95,7 @@ module DBX
       end
       index_table(name)
     end
+    name
   end
 
   def index_table(table_name)
@@ -110,7 +116,11 @@ module DBX
     count = 0
     csv_options[:headers] = false
     @types ||= {}
-    types = (@types[src] ||= [])
+
+    types = @types[src]
+    return types if types
+    types = []
+
     CSV.foreach(src, **csv_options) do |row|
       unless headers
         headers = row
@@ -142,7 +152,7 @@ module DBX
     end
     # any remaining nil types are assigned as :string
     types.size.times{|i| types[i] ||= :string }
-    Hash[headers.zip(types)]
+    @types[src] = Hash[headers.zip(types)]
   end
 
   # Detect the column type given a value.
