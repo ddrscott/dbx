@@ -4,6 +4,7 @@ require 'csv'
 require 'pg'
 require 'active_support/all'
 require 'active_record'
+require 'time'
 require 'pp'
 
 require 'dbx/model_base'
@@ -168,7 +169,7 @@ module DBX
       :uuid
     elsif value =~ /^\d{4}(\D)\d{2}\1\d{2}$/ && (Date.parse(value) rescue false)
       :date
-    elsif (Time.zone.parse(value) rescue false)
+    elsif (Time.parse(value) rescue false)
       :datetime
     else
       :string
