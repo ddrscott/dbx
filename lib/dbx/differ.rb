@@ -36,6 +36,9 @@ module DBX
           (SELECT COUNT(*) FROM #{table_diff}) diffs
         SQL
       end
+      DBX.info("Creating diff stats: #{table_diff}")
+      create_diff_stats(table_diff, force: force)
+
       DBX.info("Diff complete. Results details in:   #{table_diff}")
     end
 
@@ -50,17 +53,51 @@ module DBX
       diff(table_a: table_a, table_b: table_b, force: force, using: using, exclude_columns: exclude_columns)
     end
 
+    def create_diff_stats(diff_table, force: false)
+      DBX.connection do |conn|
+        diff_stats = "#{diff_table}_stats"
+        conn.execute("DROP TABLE IF EXISTS #{diff_stats}") if force
+        selects = conn.columns(diff_table).map do |column|
+          header, type = column.name, column.type
+          col = header[/(.*)_diff$/, 1]
+          next unless col
+
+          if column.sql_type == 'interval'
+            %{SUM(#{header}) AS #{col}_sum}
+          else
+            case type
+            when :decimal, :integer, :date, :datetime
+              %{SUM(#{header}) AS #{col}_sum}
+            else
+              %{COUNT(#{header}) AS #{col}_count}
+            end
+          end
+        end.compact.join(",\n")
+        conn.execute(<<-SQL)
+          CREATE TABLE #{diff_stats} AS
+          SELECT
+            #{selects}
+          FROM #{diff_table}
+        SQL
+      end
+    end
+
     def select_columns(table, exclude_columns: nil)
       exclude_columns ||= []
       DBX.connection do |conn|
         conn.columns(table).map do |column|
           header, type = column.name, column.type
           next if exclude_columns.include?(header)
+
+
+          DBX.info "#{header} => #{type}"
           case type
           when :decimal, :integer
             select_difference(header)
-          when :date, :datetime
-            select_difference_as_text(header)
+          when :date
+            select_difference_as_int(header)
+          when :datetime
+            select_difference_as_interval(header)
           else
             select_boolean(header)
           end
@@ -83,6 +120,18 @@ module DBX
       a = "a.#{column}"
       b = "b.#{column}"
       %(#{a} AS #{column}_a, #{b} AS #{column}_b, (CASE WHEN #{a} = #{b} THEN NULL WHEN #{a} IS NULL THEN #{b} WHEN #{b} IS NULL THEN #{a} ELSE NULLIF(#{b} - #{a}, 0) END) AS #{column}_diff)
+    end
+
+    def select_difference_as_int(column)
+      a = "a.#{column}"
+      b = "b.#{column}"
+      %(#{a} AS #{column}_a, #{b} AS #{column}_b, (CASE WHEN #{a} = #{b} THEN NULL::bigint WHEN #{a} IS NULL THEN 1 WHEN #{b} IS NULL THEN -1 ELSE (#{b} - #{a}) END) AS #{column}_diff)
+    end
+
+    def select_difference_as_interval(column)
+      a = "a.#{column}"
+      b = "b.#{column}"
+      %(#{a} AS #{column}_a, #{b} AS #{column}_b, (CASE WHEN #{a} = #{b} THEN NULL::interval WHEN #{a} IS NULL THEN '1 day'::interval WHEN #{b} IS NULL THEN '-1 day'::interval ELSE (#{b} - #{a})::interval END) AS #{column}_diff)
     end
 
     def select_difference_as_text(column)
