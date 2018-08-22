@@ -47,27 +47,31 @@ class CLI < Thor
   end
 
   desc 'diff TABLE_A TABLE_B', 'create diff table between TABLE_A and TABLE_B.'
-  option :force, type: :boolean
-  option :using, type: :array
+  option :force, type: :boolean, banner: 'remove diff_ table if it exists'
+  option :using, type: :array, banner: 'JOIN USING the columns list here. Ex: id'
+  option :exclude_columns, type: :array, banner: 'Exclude columns from comparison and selection'
   def diff(table_a, table_b)
     handle_global_options
     DBX::Differ.diff(
       table_a: table_a,
       table_b: table_b,
       using: options[:using],
+      exclude_columns: options[:exclude_columns],
       force: options[:force]
     )
   end
 
   desc 'import_diff SRC_A SRC_B', 'import then diff between SRC_A and SRC_B.'
-  option :force, type: :boolean
-  option :using, type: :array
+  option :force, type: :boolean, banner: 'remove diff_ table if it exists'
+  option :using, type: :array, banner: 'JOIN USING the columns list here. Ex: id'
+  option :exclude_columns, type: :array, banner: 'Exclude columns from comparison and selection'
   def import_diff(src_a, src_b)
     handle_global_options
     DBX::Differ.import_and_diff(
       src_a: src_a,
       src_b: src_b,
       using: options[:using],
+      exclude_columns: options[:exclude_columns],
       force: options[:force]
     )
   end
