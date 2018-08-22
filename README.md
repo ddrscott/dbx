@@ -1,17 +1,17 @@
 # DBX
 
-Misc database utilities
+Database eXtras for working with CSV files in a database.
 
 ## Commands
 
 ```sh
 Commands:
-  dbx create SRC               # create a table with types from SRC file
+  dbx create SRC               # create a table with types from SRC CSV file
   dbx diff TABLE_A TABLE_B     # create diff table between TABLE_A and TABLE_B.
   dbx help [COMMAND]           # Describe available commands or one specific command
-  dbx import SRC               # import SRC into table
-  dbx import_diff SRC_A SRC_B  # import then diff between SRC_A and SRC_B.
-  dbx types SRC                # detect column types give a SRC file
+  dbx import SRC               # import SRC CSV into table
+  dbx import_diff SRC_A SRC_B  # import then diff between SRC_A CSV and SRC_B CSV files.
+  dbx types SRC                # detect column types give a SRC CSV file
 
 Options:
   [--db=Database URL: adapter://user:pass@host:port/db_name]

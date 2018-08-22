@@ -14,7 +14,7 @@ class CLI < Thor
   class_option :sample, type: :numeric, banner: 'Number of rows to sample for type detection', default: 100
 
   # contents of the Thor class
-  desc 'types SRC', 'detect column types give a SRC file'
+  desc 'types SRC', 'detect column types give a SRC CSV file'
   def types(src)
     handle_global_options
     DBX.column_types(src, sample_rows: options[:sample]).each do |col, type|
@@ -22,7 +22,7 @@ class CLI < Thor
     end
   end
 
-  desc 'create SRC', 'create a table with types from SRC file'
+  desc 'create SRC', 'create a table with types from SRC CSV file'
   option :name
   option :force, type: :boolean
   def create(src)
@@ -34,7 +34,7 @@ class CLI < Thor
     )
   end
 
-  desc 'import SRC', 'import SRC into table'
+  desc 'import SRC', 'import SRC CSV into table'
   option :name
   option :force, type: :boolean
   def import(src)
@@ -61,7 +61,7 @@ class CLI < Thor
     )
   end
 
-  desc 'import_diff SRC_A SRC_B', 'import then diff between SRC_A and SRC_B.'
+  desc 'import_diff SRC_A SRC_B', 'import then diff between SRC_A CSV and SRC_B CSV files.'
   option :force, type: :boolean, banner: 'remove diff_ table if it exists'
   option :using, type: :array, banner: 'JOIN USING the columns list here. Ex: id'
   option :exclude_columns, type: :array, banner: 'Exclude columns from comparison and selection'
