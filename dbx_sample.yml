@@ -1,0 +1,3 @@
+column_patterns:
+  phone_number: :string
+  external: :string

@@ -1,0 +1,62 @@
+#!/usr/bin/env ruby
+
+require 'bundler/setup'
+require 'thor'
+require 'dbx'
+require 'pp'
+require 'pry'
+
+# nodoc
+# #rubocop:disable all
+class CLI < Thor
+  class_option :db, type: :string, banner: 'adapter://user:pass@host:port/db_name'
+  class_option :column_patterns, type: :array, banner: 'phone:string external_ref:string ...'
+
+  # contents of the Thor class
+  desc 'types SRC', 'detect column types give a SRC file'
+  def types(src)
+    handle_global_options
+    DBX.column_types(src).each do |col, type|
+      puts "#{col},#{type}"
+    end
+  end
+
+  desc 'create SRC', 'create a table with types from SRC file'
+  option :name
+  option :force, type: :boolean
+  def create(src)
+    handle_global_options
+    DBX.create_table(
+      src,
+      db_url: options[:db],
+      name: options[:name],
+      force: options[:force]
+    )
+  end
+
+  desc 'import SRC', 'import SRC into table'
+  option :name
+  option :force, type: :boolean
+  def import(src)
+    handle_global_options
+    DBX.import_table(
+      src,
+      db_url: options[:db],
+      name: options[:name],
+      force: options[:force]
+    )
+  end
+
+  private
+
+  def handle_global_options
+    if options[:column_patterns]
+      options[:column_patterns].each do |pair|
+        pattern, type = pair.split(':').map(&:strip)
+        patterns = (DBX.config['column_patterns'] ||= {})
+        patterns[pattern] = type.to_sym
+      end
+    end
+  end
+end
+CLI.start(ARGV)
