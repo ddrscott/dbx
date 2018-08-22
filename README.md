@@ -6,15 +6,17 @@ Misc database utilities
 
 ```sh
 Commands:
-  dbx create SRC      # create a table with types from SRC file
-  dbx help [COMMAND]  # Describe available commands or one specific command
-  dbx import SRC      # import SRC into table
-  dbx types SRC       # detect column types give a SRC file
+  dbx create SRC               # create a table with types from SRC file
+  dbx diff TABLE_A TABLE_B     # create diff table between TABLE_A and TABLE_B.
+  dbx help [COMMAND]           # Describe available commands or one specific command
+  dbx import SRC               # import SRC into table
+  dbx import_diff SRC_A SRC_B  # import then diff between SRC_A and SRC_B.
+  dbx types SRC                # detect column types give a SRC file
 
 Options:
   [--db=Database URL: adapter://user:pass@host:port/db_name]
   [--column-patterns=List of column patterns to override type info. Ex: phone:string external_ref:string ...]
-  [--sample=Number of rows to sample for type detection]   # default 100
+  [--sample=Number of rows to sample for type detection] # Default: 100
 ```
 
 ## Configuration
