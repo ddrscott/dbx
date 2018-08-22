@@ -9,14 +9,15 @@ require 'pry'
 # nodoc
 # #rubocop:disable all
 class CLI < Thor
-  class_option :db, type: :string, banner: 'adapter://user:pass@host:port/db_name'
-  class_option :column_patterns, type: :array, banner: 'phone:string external_ref:string ...'
+  class_option :db, type: :string, banner: 'Database URL: adapter://user:pass@host:port/db_name'
+  class_option :column_patterns, type: :array, banner: 'List of column patterns to override type info. Ex: phone:string external_ref:string ...'
+  class_option :sample, type: :numeric, banner: 'Number of rows to sample for type detection', default: 100
 
   # contents of the Thor class
   desc 'types SRC', 'detect column types give a SRC file'
   def types(src)
     handle_global_options
-    DBX.column_types(src).each do |col, type|
+    DBX.column_types(src, sample_rows: options[:sample]).each do |col, type|
       puts "#{col},#{type}"
     end
   end
@@ -30,7 +31,8 @@ class CLI < Thor
       src,
       db_url: options[:db],
       name: options[:name],
-      force: options[:force]
+      force: options[:force],
+      sample_rows: options[:sample]
     )
   end
 
@@ -56,6 +58,10 @@ class CLI < Thor
         patterns = (DBX.config['column_patterns'] ||= {})
         patterns[pattern] = type.to_sym
       end
+    end
+
+    if options[:sample]
+      DBX.config['sample_rows'] = options[:sample]
     end
   end
 end

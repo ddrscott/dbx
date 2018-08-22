@@ -28,6 +28,10 @@ module DBX
     end
   end
 
+  def config_sample_rows
+    config['sample_rows'] || 100
+  end
+
   # TODO what about windows?!
   def tty
     @tty ||= File.open('/dev/tty', 'a')
@@ -47,7 +51,7 @@ module DBX
     File.basename(src).sub(File.extname(src), '')
   end
 
-  def create_table(src, db_url:, name: nil, force: false, sample_rows: 100, csv_options: {})
+  def create_table(src, db_url:, name: nil, force: false, sample_rows: config_sample_rows, csv_options: {})
     name ||= parse_table_name(src)
     types = column_types(src, sample_rows: sample_rows, csv_options: csv_options)
     connection(db_url) do |conn|
@@ -60,7 +64,7 @@ module DBX
   end
 
   # TODO parse CSV options into Postgres
-  def import_table(src, db_url:, name: nil, force: false, sample_rows: 100, csv_options: {})
+  def import_table(src, db_url:, name: nil, force: false, sample_rows: config_sample_rows, csv_options: {})
     name ||= parse_table_name(src)
     connection(db_url) do |conn|
       create_table(src, db_url: db_url, force: force, sample_rows: sample_rows, csv_options: csv_options)
@@ -97,7 +101,7 @@ module DBX
   # Types are memory cached by `src`.
   #
   # @return [Hash<String, Symbol>] column name to type symbols
-  def column_types(src, sample_rows: 100, csv_options: {})
+  def column_types(src, sample_rows: config_sample_rows, csv_options: {})
     headers = nil
     count = 0
     csv_options[:headers] = false

@@ -2,17 +2,19 @@
 
 Misc database utilities
 
-## Usage
+## Commands
 
 ```sh
-dbx type items.csv
+Commands:
+  dbx create SRC      # create a table with types from SRC file
+  dbx help [COMMAND]  # Describe available commands or one specific command
+  dbx import SRC      # import SRC into table
+  dbx types SRC       # detect column types give a SRC file
 
-./exe/dbx import data.csv --force --db postgres://localhost/scratch --column-patterns external_id:string
-
-# 
-
-# import CSV as table
-DATABASE_URL=postgres:///foo dbx import foo.csv
+Options:
+  [--db=Database URL: adapter://user:pass@host:port/db_name]
+  [--column-patterns=List of column patterns to override type info. Ex: phone:string external_ref:string ...]
+  [--sample=Number of rows to sample for type detection]   # default 100
 ```
 
 ## Configuration
@@ -27,6 +29,9 @@ column_patterns:
   zipcode:      :string
   zip_code:     :string
   external_ref: :string
+
+# Number of rows to sample for type detection
+sample: 100
 ```
 
 ## Installation
