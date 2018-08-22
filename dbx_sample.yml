@@ -1,3 +1,13 @@
+# Database receiving the imported and diff data.
+db: postgres://localhost/scratch
+
+# Column patterns are used to override column detection based on the a matched pattern in the name.
+# This is useful for things like phone numbers and zip codes where they look like numbers, but should be strings.
 column_patterns:
   phone_number: :string
-  external: :string
+  zipcode:      :string
+  zip_code:     :string
+  external_ref: :string
+
+# Number of rows to sample for type detection
+sample: 100

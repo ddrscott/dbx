@@ -24,6 +24,9 @@ Options:
 If the current path contains a `dbx.yml` file, it will be read first. Settings in the config file can still be overridden by command line arguments.
 
 ```yaml
+# Database receiving the imported and diff data.
+db: postgres://localhost/scratch
+
 # Column patterns are used to override column detection based on the a matched pattern in the name.
 # This is useful for things like phone numbers and zip codes where they look like numbers, but should be strings.
 column_patterns:
