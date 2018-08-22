@@ -82,13 +82,13 @@ module DBX
     def select_difference(column)
       a = "a.#{column}"
       b = "b.#{column}"
-      %(#{a} AS #{column}_a, #{b} AS #{column}_b, (CASE WHEN #{a} IS NULL THEN #{b} WHEN #{b} IS NULL THEN #{a} ELSE NULLIF(#{b} - #{a}, 0) END) AS #{column}_diff)
+      %(#{a} AS #{column}_a, #{b} AS #{column}_b, (CASE WHEN #{a} = #{b} THEN NULL WHEN #{a} IS NULL THEN #{b} WHEN #{b} IS NULL THEN #{a} ELSE NULLIF(#{b} - #{a}, 0) END) AS #{column}_diff)
     end
 
     def select_difference_as_text(column)
       a = "a.#{column}"
       b = "b.#{column}"
-      %(#{a} AS #{column}_a, #{b} AS #{column}_b, (CASE WHEN #{a} IS NULL THEN #{b}::text WHEN #{b} IS NULL THEN #{a}::text ELSE NULLIF((#{b} - #{a})::text, '0') END) AS #{column}_diff)
+      %(#{a} AS #{column}_a, #{b} AS #{column}_b, (CASE WHEN #{a} = #{b} THEN NULL WHEN #{a} IS NULL THEN #{b}::text WHEN #{b} IS NULL THEN #{a}::text ELSE (#{b} - #{a})::text END) AS #{column}_diff)
     end
 
     def select_boolean(column)
