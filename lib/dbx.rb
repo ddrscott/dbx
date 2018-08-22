@@ -77,7 +77,7 @@ module DBX
   def import_table(src, name: nil, force: false, sample_rows: config_sample_rows, csv_options: {})
     name ||= parse_table_name(src)
     connection do |conn|
-      create_table(src, force: force, sample_rows: sample_rows, csv_options: csv_options)
+      create_table(src, name: name, force: force, sample_rows: sample_rows, csv_options: csv_options)
       # TODO only postgres is support at the moment
       pg = conn.instance_variable_get(:@connection)
       types = column_types(src).keys.map{|m| %("#{m}")}

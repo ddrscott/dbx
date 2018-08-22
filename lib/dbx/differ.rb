@@ -88,9 +88,6 @@ module DBX
         conn.columns(table).map do |column|
           header, type = column.name, column.type
           next if exclude_columns.include?(header)
-
-
-          DBX.info "#{header} => #{type}"
           case type
           when :decimal, :integer
             select_difference(header)
