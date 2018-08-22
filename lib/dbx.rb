@@ -32,12 +32,16 @@ module DBX
     config['sample_rows'] || 100
   end
 
+  def config_db
+    ENV['DATABASE_URL'] || config['db'] || raise('`db` not set as command line option or `dbx.yml`')
+  end
+
   # TODO what about windows?!
   def tty
     @tty ||= File.open('/dev/tty', 'a')
   end
 
-  def connection(db_url, &block)
+  def connection(db_url: config_db, &block)
     # ENV['DATABASE_URL'] = db_url
     # @pool ||= ModelBase.establish_connection(db_url)
     @pool ||= begin
@@ -51,10 +55,10 @@ module DBX
     File.basename(src).sub(File.extname(src), '')
   end
 
-  def create_table(src, db_url:, name: nil, force: false, sample_rows: config_sample_rows, csv_options: {})
+  def create_table(src, name: nil, force: false, sample_rows: config_sample_rows, csv_options: {})
     name ||= parse_table_name(src)
     types = column_types(src, sample_rows: sample_rows, csv_options: csv_options)
-    connection(db_url) do |conn|
+    connection do |conn|
       conn.create_table name, force: force, id: false do |t|
         types.each do |column, type|
           t.send(type, column, nulls: true)
@@ -64,10 +68,10 @@ module DBX
   end
 
   # TODO parse CSV options into Postgres
-  def import_table(src, db_url:, name: nil, force: false, sample_rows: config_sample_rows, csv_options: {})
+  def import_table(src, name: nil, force: false, sample_rows: config_sample_rows, csv_options: {})
     name ||= parse_table_name(src)
-    connection(db_url) do |conn|
-      create_table(src, db_url: db_url, force: force, sample_rows: sample_rows, csv_options: csv_options)
+    connection do |conn|
+      create_table(src, force: force, sample_rows: sample_rows, csv_options: csv_options)
       # TODO only postgres is support at the moment
       pg = conn.instance_variable_get(:@connection)
       types = column_types(src).keys.map{|m| %("#{m}")}
@@ -84,12 +88,12 @@ module DBX
           pg.put_copy_data(line)
         end
       end
-      index_table(name, db_url: db_url)
+      index_table(name)
     end
   end
 
-  def index_table(table_name, db_url:)
-    connection(db_url) do |conn|
+  def index_table(table_name)
+    connection do |conn|
       conn.columns(table_name).each_with_index do |column, i|
         conn.add_index(table_name, [column.name], name: "idx_#{table_name}_#{i.to_s.rjust(2,'0')}")
       end

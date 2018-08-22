@@ -29,10 +29,8 @@ class CLI < Thor
     handle_global_options
     DBX.create_table(
       src,
-      db_url: options[:db],
       name: options[:name],
-      force: options[:force],
-      sample_rows: options[:sample]
+      force: options[:force]
     )
   end
 
@@ -43,7 +41,6 @@ class CLI < Thor
     handle_global_options
     DBX.import_table(
       src,
-      db_url: options[:db],
       name: options[:name],
       force: options[:force]
     )
@@ -62,6 +59,10 @@ class CLI < Thor
 
     if options[:sample]
       DBX.config['sample_rows'] = options[:sample]
+    end
+
+    if options[:db]
+      DBX.config['db'] = options[:db]
     end
   end
 end
