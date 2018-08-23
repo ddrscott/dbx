@@ -49,6 +49,7 @@ class CLI < Thor
   option :force, type: :boolean, banner: 'remove diff_ table if it exists'
   option :using, type: :array, banner: 'JOIN USING the columns list here. Ex: id'
   option :exclude_columns, type: :array, banner: 'Exclude columns from comparison and selection'
+  option :no_a_b, type: :boolean, banner: 'Disable the *_a and *_b columns from *_diff table'
   def diff(table_a, table_b)
     handle_global_options
     DBX::Differ.diff(
@@ -56,7 +57,8 @@ class CLI < Thor
       table_b: table_b,
       using: options[:using],
       exclude_columns: options[:exclude_columns],
-      force: options[:force]
+      force: options[:force],
+      no_a_b: options[:no_a_b]
     )
   end
 
@@ -64,6 +66,7 @@ class CLI < Thor
   option :force, type: :boolean, banner: 'remove diff_ table if it exists'
   option :using, type: :array, banner: 'JOIN USING the columns list here. Ex: id'
   option :exclude_columns, type: :array, banner: 'Exclude columns from comparison and selection'
+  option :no_a_b, type: :boolean, banner: 'Disable the *_a and *_b columns from *_diff table'
   def import_diff(src_a, src_b)
     handle_global_options
     DBX::Differ.import_and_diff(
@@ -71,7 +74,8 @@ class CLI < Thor
       src_b: src_b,
       using: options[:using],
       exclude_columns: options[:exclude_columns],
-      force: options[:force]
+      force: options[:force],
+      no_a_b: options[:no_a_b]
     )
   end
 

@@ -13,7 +13,7 @@ module DBX
     # @param [String] table B Should be newer than table A, but doesn't have to be.
     # @param [Array<String>] using is the join criteria between the 2 tables.
     # @param [Array<String>] exclude_columns are excluded from the diff comparison.
-    def diff(table_a:, table_b:, force: false, using: ['id'], exclude_columns: nil)
+    def diff(table_a:, table_b:, force: false, using: ['id'], exclude_columns: nil, no_a_b: false)
       table_diff = "diff_#{table_a}_#{table_b}"
       exclude_columns ||= []
       DBX.info("Creating diff table #{table_diff}")
@@ -23,7 +23,7 @@ module DBX
         CREATE TABLE #{table_diff} AS
         SELECT
           #{using.join(', ')},
-          #{select_columns(table_a, exclude_columns: using + exclude_columns)}
+          #{select_columns(table_a, exclude_columns: using + exclude_columns, no_a_b: no_a_b)}
         FROM #{table_a} AS a
         FULL OUTER JOIN #{table_b} b USING (#{using.join(',')})
         WHERE
@@ -42,7 +42,7 @@ module DBX
       DBX.info("Diff complete. Results details in:   #{table_diff}")
     end
 
-    def import_and_diff(src_a:, src_b:, force: false, using: ['id'], exclude_columns: nil)
+    def import_and_diff(src_a:, src_b:, force: false, using: ['id'], exclude_columns: nil, no_a_b: false)
       DBX.info("Importing #{src_a}")
       table_a = DBX.import_table(src_a, force: force)
 
@@ -50,7 +50,7 @@ module DBX
       DBX.info("Importing #{src_b}")
       table_b = DBX.import_table(src_b, force: force)
 
-      diff(table_a: table_a, table_b: table_b, force: force, using: using, exclude_columns: exclude_columns)
+      diff(table_a: table_a, table_b: table_b, force: force, using: using, exclude_columns: exclude_columns, no_a_b: no_a_b)
     end
 
     def create_diff_stats(diff_table, force: false)
@@ -82,7 +82,7 @@ module DBX
       end
     end
 
-    def select_columns(table, exclude_columns: nil)
+    def select_columns(table, exclude_columns: nil, no_a_b: false)
       exclude_columns ||= []
       DBX.connection do |conn|
         conn.columns(table).map do |column|
@@ -90,13 +90,13 @@ module DBX
           next if exclude_columns.include?(header)
           case type
           when :decimal, :integer
-            select_difference(header)
+            select_difference(header, no_a_b: no_a_b)
           when :date
-            select_difference_as_int(header)
+            select_difference_as_int(header, no_a_b: no_a_b)
           when :datetime
-            select_difference_as_interval(header)
+            select_difference_as_interval(header, no_a_b: no_a_b)
           else
-            select_boolean(header)
+            select_boolean(header, no_a_b: no_a_b)
           end
         end.compact.join(',')
       end
@@ -113,34 +113,39 @@ module DBX
       end.compact.join('OR')
     end
 
-    def select_difference(column)
+    def select_difference(column, no_a_b: false)
       a = "a.#{column}"
       b = "b.#{column}"
-      %(#{a} AS #{column}_a, #{b} AS #{column}_b, (CASE WHEN #{a} = #{b} THEN NULL WHEN #{a} IS NULL THEN #{b} WHEN #{b} IS NULL THEN #{a} ELSE NULLIF(#{b} - #{a}, 0) END) AS #{column}_diff)
+      a_b = no_a_b ? '' : "#{a} AS #{column}_a, #{b} AS #{column}_b, "
+      %(#{a_b}(CASE WHEN #{a} = #{b} THEN NULL WHEN #{a} IS NULL THEN #{b} WHEN #{b} IS NULL THEN #{a} ELSE NULLIF(#{b} - #{a}, 0) END) AS #{column}_diff)
     end
 
-    def select_difference_as_int(column)
+    def select_difference_as_int(column, no_a_b: false)
       a = "a.#{column}"
       b = "b.#{column}"
-      %(#{a} AS #{column}_a, #{b} AS #{column}_b, (CASE WHEN #{a} = #{b} THEN NULL::bigint WHEN #{a} IS NULL THEN 1 WHEN #{b} IS NULL THEN -1 ELSE (#{b} - #{a}) END) AS #{column}_diff)
+      a_b = no_a_b ? '' : "#{a} AS #{column}_a, #{b} AS #{column}_b, "
+      %(#{a_b}(CASE WHEN #{a} = #{b} THEN NULL::bigint WHEN #{a} IS NULL THEN 1 WHEN #{b} IS NULL THEN -1 ELSE (#{b} - #{a}) END) AS #{column}_diff)
     end
 
-    def select_difference_as_interval(column)
+    def select_difference_as_interval(column, no_a_b: false)
       a = "a.#{column}"
       b = "b.#{column}"
-      %(#{a} AS #{column}_a, #{b} AS #{column}_b, (CASE WHEN #{a} = #{b} THEN NULL::interval WHEN #{a} IS NULL THEN '1 day'::interval WHEN #{b} IS NULL THEN '-1 day'::interval ELSE (#{b} - #{a})::interval END) AS #{column}_diff)
+      a_b = no_a_b ? '' : "#{a} AS #{column}_a, #{b} AS #{column}_b, "
+      %(#{a_b}(CASE WHEN #{a} = #{b} THEN NULL::interval WHEN #{a} IS NULL THEN '1 day'::interval WHEN #{b} IS NULL THEN '-1 day'::interval ELSE (#{b} - #{a})::interval END) AS #{column}_diff)
     end
 
-    def select_difference_as_text(column)
+    def select_difference_as_text(column, no_a_b: false)
       a = "a.#{column}"
       b = "b.#{column}"
-      %(#{a} AS #{column}_a, #{b} AS #{column}_b, (CASE WHEN #{a} = #{b} THEN NULL WHEN #{a} IS NULL THEN #{b}::text WHEN #{b} IS NULL THEN #{a}::text ELSE (#{b} - #{a})::text END) AS #{column}_diff)
+      a_b = no_a_b ? '' : "#{a} AS #{column}_a, #{b} AS #{column}_b, "
+      %(#{a_b}(CASE WHEN #{a} = #{b} THEN NULL WHEN #{a} IS NULL THEN #{b}::text WHEN #{b} IS NULL THEN #{a}::text ELSE (#{b} - #{a})::text END) AS #{column}_diff)
     end
 
-    def select_boolean(column)
+    def select_boolean(column, no_a_b: false)
       a = "a.#{column}"
       b = "b.#{column}"
-      %(#{a} AS #{column}_a, #{b} AS #{column}_b, NULLIF(#{a} <> #{b}, FALSE) AS #{column}_diff)
+      a_b = no_a_b ? '' : "#{a} AS #{column}_a, #{b} AS #{column}_b, "
+      %(#{a_b}NULLIF(#{a} <> #{b}, FALSE) AS #{column}_diff)
     end
   end
 end
