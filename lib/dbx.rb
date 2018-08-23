@@ -58,7 +58,7 @@ module DBX
   end
 
   def parse_table_name(src)
-    File.basename(src).sub(File.extname(src), '')
+    File.basename(src).sub(File.extname(src), '').downcase
   end
 
   def create_table(src, name: nil, force: false, sample_rows: config_sample_rows, csv_options: {})
@@ -82,7 +82,7 @@ module DBX
       pg = conn.instance_variable_get(:@connection)
       types = column_types(src).keys.map{|m| %("#{m}")}
 
-      pg_stmt = "COPY #{name}(#{types.join(',')}) FROM STDIN CSV"
+      pg_stmt = %{COPY "#{name}"(#{types.join(',')}) FROM STDIN CSV}
       conn.logger.debug(pg_stmt)
       pg.copy_data(pg_stmt) do
         first = true
