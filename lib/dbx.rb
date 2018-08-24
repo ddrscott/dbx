@@ -132,7 +132,7 @@ module DBX
 
     CSV.foreach(src, **csv_options) do |row|
       unless headers
-        headers = row
+        headers = row.map(&:downcase)
         next
       end
 
