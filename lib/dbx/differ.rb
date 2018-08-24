@@ -16,6 +16,7 @@ module DBX
     def diff(table_a:, table_b:, force: false, using: ['id'], exclude_columns: nil, no_a_b: false)
       table_diff = "diff_#{table_a}_#{table_b}"
       exclude_columns ||= []
+      using = using.map(&:downcase)
       DBX.info("Creating diff table #{table_diff}")
       DBX.connection do |conn|
         conn.execute("DROP TABLE IF EXISTS #{table_diff}") if force
