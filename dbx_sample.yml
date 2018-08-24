@@ -11,3 +11,6 @@ column_patterns:
 
 # Number of rows to sample for type detection
 sample: 100
+
+# Add index if column matches this pattern.
+auto_index_pattern: _id$

@@ -34,6 +34,10 @@ module DBX
     config['sample_rows'] || 100
   end
 
+  def config_auto_index_pattern
+    config['auto_index_pattern']
+  end
+
   def config_db
     ENV['DATABASE_URL'] || config['db'] || raise('`db` not set as command line option or `dbx.yml`')
   end
@@ -94,14 +98,18 @@ module DBX
           pg.put_copy_data(line)
         end
       end
-      index_table(name)
+
+      unless config_auto_index_pattern.blank?
+        index_table(name, pattern: /#{config_auto_index_pattern}/)
+      end
     end
     name
   end
 
-  def index_table(table_name)
+  def index_table(table_name, pattern: nil)
     connection do |conn|
       conn.columns(table_name).each_with_index do |column, i|
+        next unless column.name =~ pattern
         conn.add_index(table_name, [column.name], name: "idx_#{table_name}_#{i.to_s.rjust(2,'0')}")
       end
     end

@@ -1,22 +1,72 @@
 # DBX
 
-Database eXtras for working with CSV files in a database.
+Database eXtras for working with CSV files in a Postgres database.
 
-## Commands
+We currently only support Postgres database, but others will be supported soon.
+
+## Usage Examples
+
+### Import CSV file into database
+
+Column type detection is performed based on column contents. By default the new table name will be the file name minus its extension, indexes are added to column ending with `_id$`.
+
+```sh
+dbx import path/to/data.csv --name data_v1 --db postgres://localhost/scratch --column-patterns _ref$:string
+# --db   : Used to define where to put the table.
+# --column-patterns : [] Override the detected column type.
+# --name : [data] Optional override to default table name of file's base name without extension.
+# --sample : [100] Number of rows to sample during column detection.
+# --force : [false] Drops the destination table if it exists.
+# --auto-index-pattern : [^(\w+_id|id)$] Creates indexes for columns matching the pattern
+```
+
+### Create diff table of two tables in a database
+
++ The new table will be named `diff_data_v1_data_v2`.
++ It will contains column_a, column_b, column_diff. Where column is every `column_` from `data_v1` and `column_diff` is a simple difference representation of columns `_a` and `_b`.
+  + Columns `_a` and `_b` can be omitted with `--no-a-b`
+
+```sh
+dbx diff data_v1 data_v2 --db postgres://localhost/scratch --using id
+# --db   : Used to define where to put the table.
+# --using : Space delimited list of join columns.
+# --no-a-b: [false] Omit the `_a` and `_b` columns showing the source data.
+# --force : [false] Drops the destination diff table if it exists.
+```
+
+### Import and diff two CSV files
+
+Do the import and diff all at once!!!
+
+```sh
+dbx import_diff /path/to/data_v1.csv /path/to/data_v2.csv --db postgres://localhost/scratch --using id
+# --db   : Used to define where to put the table.
+# --column-patterns : [] Override the detected column type.
+# --sample : [100] Number of rows to sample during column detection.
+# --auto-index-pattern : [^(\w+_id|id)$] Creates indexes for columns matching the pattern
+# --using : Space delimited list of join columns.
+# --no-a-b: [false] Omit the `_a` and `_b` columns showing the source data.
+# --force : [false] Drops the destination diff table if it exists.
+```
+
+### List of Commands `dbx help`
 
 ```sh
 Commands:
-  dbx create SRC               # create a table with types from SRC CSV file
-  dbx diff TABLE_A TABLE_B     # create diff table between TABLE_A and TABLE_B.
+  dbx create SRC               # Create a table with types from SRC CSV file
+  dbx diff TABLE_A TABLE_B     # Create diff table between TABLE_A and TABLE_B.
   dbx help [COMMAND]           # Describe available commands or one specific command
-  dbx import SRC               # import SRC CSV into table
-  dbx import_diff SRC_A SRC_B  # import then diff between SRC_A CSV and SRC_B CSV files.
-  dbx types SRC                # detect column types give a SRC CSV file
+  dbx import SRC               # Import SRC CSV into table
+  dbx import_diff SRC_A SRC_B  # Import then diff between SRC_A CSV and SRC_B CSV files.
+  dbx types SRC                # Detect column types give a SRC CSV file
 
 Options:
   [--db=Database URL: adapter://user:pass@host:port/db_name]
-  [--column-patterns=List of column patterns to override type info. Ex: phone:string external_ref:string ...]
-  [--sample=Number of rows to sample for type detection] # Default: 100
+  [--column-patterns=List of column patterns to override type info]
+  [--sample=Number of rows to sample for type detection]
+                                                                     # Default: 100
+  [--auto-index-pattern=Add index when column matches pattern]
+                                                                     # Default: ^(\w+_id|id)$
 ```
 
 ## Configuration
@@ -37,6 +87,9 @@ column_patterns:
 
 # Number of rows to sample for type detection
 sample: 100
+
+# Add index if column matches this pattern.
+auto_index_pattern: _id$
 ```
 
 ## Installation

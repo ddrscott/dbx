@@ -9,11 +9,12 @@ require 'pp'
 # #rubocop:disable all
 class CLI < Thor
   class_option :db, type: :string, banner: 'Database URL: adapter://user:pass@host:port/db_name'
-  class_option :column_patterns, type: :array, banner: 'List of column patterns to override type info. Ex: phone:string external_ref:string ...'
+  class_option :column_patterns, type: :array, banner: 'List of column patterns to override type info'
   class_option :sample, type: :numeric, banner: 'Number of rows to sample for type detection', default: 100
+  class_option :auto_index_pattern, type: :string, default: '^(\w+_id|id)$', banner: 'Add index when column matches pattern'
 
   # contents of the Thor class
-  desc 'types SRC', 'detect column types give a SRC CSV file'
+  desc 'types SRC', 'Detect column types give a SRC CSV file'
   def types(src)
     handle_global_options
     DBX.column_types(src, sample_rows: options[:sample]).each do |col, type|
@@ -21,7 +22,7 @@ class CLI < Thor
     end
   end
 
-  desc 'create SRC', 'create a table with types from SRC CSV file'
+  desc 'create SRC', 'Create a table with types from SRC CSV file'
   option :name
   option :force, type: :boolean
   def create(src)
@@ -33,7 +34,7 @@ class CLI < Thor
     )
   end
 
-  desc 'import SRC', 'import SRC CSV into table'
+  desc 'import SRC', 'Import SRC CSV into table'
   option :name
   option :force, type: :boolean
   def import(src)
@@ -45,7 +46,7 @@ class CLI < Thor
     )
   end
 
-  desc 'diff TABLE_A TABLE_B', 'create diff table between TABLE_A and TABLE_B.'
+  desc 'diff TABLE_A TABLE_B', 'Create diff table between TABLE_A and TABLE_B.'
   option :force, type: :boolean, banner: 'remove diff_ table if it exists'
   option :using, type: :array, banner: 'JOIN USING the columns list here. Ex: id'
   option :exclude_columns, type: :array, banner: 'Exclude columns from comparison and selection'
@@ -62,7 +63,7 @@ class CLI < Thor
     )
   end
 
-  desc 'import_diff SRC_A SRC_B', 'import then diff between SRC_A CSV and SRC_B CSV files.'
+  desc 'import_diff SRC_A SRC_B', 'Import then diff between SRC_A CSV and SRC_B CSV files.'
   option :force, type: :boolean, banner: 'remove diff_ table if it exists'
   option :using, type: :array, banner: 'JOIN USING the columns list here. Ex: id'
   option :exclude_columns, type: :array, banner: 'Exclude columns from comparison and selection'
@@ -96,6 +97,10 @@ class CLI < Thor
 
     if options[:db]
       DBX.config['db'] = options[:db]
+    end
+
+    if options[:auto_index_pattern]
+      DBX.config['auto_index_pattern'] = options[:auto_index_pattern]
     end
   end
 end
