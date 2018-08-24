@@ -8,7 +8,7 @@ We currently only support Postgres database, but others will be supported soon.
 
 ### Import CSV file into database
 
-Column type detection is performed based on column contents. By default the new table name will be the file name minus its extension, indexes are added to column ending with `_id$`.
+Column type detection is performed based on column contents. By default the new table name will be the file name minus its extension, indexes are added to column matching `^(\w+_id|id)$`.
 
 ```sh
 dbx import path/to/data.csv --name data_v1 --db postgres://localhost/scratch --column-patterns _ref$:string
