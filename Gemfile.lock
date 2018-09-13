@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    dbx (0.2.1)
+    dbx (0.2.2)
       activerecord (~> 4.0)
       activesupport (~> 4.0)
       thor
